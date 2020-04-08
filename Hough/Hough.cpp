@@ -1,6 +1,9 @@
 ﻿#include <opencv2/opencv.hpp>
 #include <vector>
 #include <iostream>
+using namespace std;
+using namespace cv;
+
 //课前准备
 int main()
 {
@@ -66,6 +69,79 @@ int main()
 	cv::imshow("binary", mat_binary);
 	cv::imshow("canny", mat_canny);
 	cv::imshow("color", mat_color);
+
+
+
+
+
+	std::vector<Point>points;
+	//(27 39) (8 5) (8 9) (16 22) (44 71) (35 44) (43 57) (19 24) (27 39) (37 52)
+
+	points.push_back(Point(27, 39));
+	points.push_back(Point(8, 5));
+	points.push_back(Point(8, 9));
+	points.push_back(Point(16, 22));
+	points.push_back(Point(44, 71));
+	points.push_back(Point(35, 44));
+	points.push_back(Point(43, 57));
+	points.push_back(Point(19, 24));
+	points.push_back(Point(27, 39));
+	points.push_back(Point(37, 52));
+	cv::Mat src = cv::Mat::zeros(400, 400, CV_8UC3);
+
+	for (int i = 0; i < points.size(); i++)
+	{
+		//在原图上画出点
+		circle(src, points[i], 3, Scalar(0, 0, 255), 1, 8);
+	}
+	//构建A矩阵 
+	int N = 2;
+	cv::Mat A = cv::Mat::zeros(N, N, CV_64FC1);
+
+	for (int row = 0; row < A.rows; row++)
+	{
+		for (int col = 0; col < A.cols; col++)
+		{
+			for (int k = 0; k < points.size(); k++)
+			{
+				A.at<double>(row, col) = A.at<double>(row, col) + pow(points[k].x, row + col);
+			}
+		}
+	}
+	//构建B矩阵
+	cv::Mat B = cv::Mat::zeros(N, 1, CV_64FC1);
+	for (int row = 0; row < B.rows; row++)
+	{
+
+		for (int k = 0; k < points.size(); k++)
+		{
+			B.at<double>(row, 0) = B.at<double>(row, 0) + pow(points[k].x, row)*points[k].y;
+		}
+	}
+	//A*X=B
+	cv::Mat X;
+	//cout << A << endl << B << endl;
+	solve(A, B, X, DECOMP_LU);
+	std::cout << X << endl;
+	std::vector<Point>lines2;
+	for (int x = 0; x < src.size().width; x++)
+	{				// y = b + ax;
+		double y = X.at<double>(0, 0) + X.at<double>(1, 0)*x;
+		printf("(%d,%lf)\n", x, y);
+		lines2.push_back(Point(x, y));
+	}
+	polylines(src, lines2, false, Scalar(255, 0, 0), 1, 8);
+	cv::imshow("src", src);
+
+	//cv::imshow("src", A);
+
+
+
+
+
+
+
+
 	cv::waitKey(0);
 
 	return 0;
